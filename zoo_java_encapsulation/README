@@ -1,0 +1,79 @@
+Related python code and model training details can be found in this:
+http://source.jd.com/app/jnlu-poetry-generation
+
+This code is developed for java encapsulation of NLG project. It's function is similar to the "predict.py" in the mentioned NLG python projects.
+It's utilised for 1) processing the input keywords 2) loading pretrained python NLG models and do prediction. 3) generating target text with information in 1 and saved model parameters in 2.
+
+(most of the functional code is listed in this directory: jnlu-nlg/jnlu-nlg-web)
+
+1 Code Structure (only focusing on this dir: jnlu-nlg-web )
+
+--src
+    --main/java
+        --com/jd/jnlu/nlg
+            --model
+                this folder contains all the java classes for data processing and NLG model loading and prediction
+            --test
+                java class for testing model performance and testing data processing.
+
+            --service/api/impl
+                not sure what it's used for. (not important)
+            --utils
+                not sure what it's used for. (not important)
+
+
+
+    --resources
+        --dict
+            this dir contains the vocab used for model training.
+            sample format:
+                char (space) int
+                我           1
+                你           2
+        --model
+            this dir contains the saved proto model. it's used for java loading the whole graph and weights saved in python NLG model (if u want to get the lasted training model, run 'predict.py' and saved the proto file)
+        --test
+            not sure what it's used for. (not important)
+--pom.xml
+     VIP: it's a very very important file . u can find the information of  all the necessary dependencies in this project.
+
+2 Explanation of important java classes
+    Similar to the "data_utils.py" ,"model.py","predict.py" .there are two main functions realised in this java project:
+    2.1  DataPreprcessorImpl:== data_utils.py
+        this class is used mainly for data processing:
+        1) PadList: padding list to required length
+        2)loadData: creating char2int map
+        3)loadChas: creating int2char map
+        4)preprocess: similar to the functions defined in py. it's used for processing  keywords and previous for the required model input format.
+          PS: the required input is saved in DataEntry class
+        5）SentenceToInts: converting character based sentence into ints.
+        6)ChartoInt:converting char to int
+        7)Repeat: used for beamsearch output. checking the repeatation ratio in the output sentences.
+        8)Evaluator:used for beamserach output. To check the length and repeatation rate of each sentence in the output list
+
+    2.2 NLGTensorflowModel:
+        this class is used to load the pretrained model proto and make prediction:
+        1)         byte [] ops =TensorFlow.loadLibrary("/export/scratch/liuruixue/.conda/envs/tf1.4_gpu/lib/python2.7/site-packages/tensorflow/contrib/seq2seq/python/ops/_beam_search_ops.so");
+        you should modify the path to the co-responding so path in ur server or machine. and only tensorfow 1.4.0 is efficient if your model is saved with tf version lower than tf1.4. Otherwise, if ur model is saved with tf1.5 then u should also modify the tf version in ur machin or server to run this java.
+        2) createTensor*d: create tensorflow tensor
+        3) predict: using the saved weigts model for prediction. make sure the feed name for ur input is the same to ur pyton model layer's name.
+        4) prediction returns the same output as the one defined in python.
+    2.3 SRILM:
+        to run the srilm java code, u should make sure the "lIBSRILM.so" "srilm.java",srilmJNI,SWIGTYPE_p_Ngram,SWIGTYPE_p_TextStats,SWIGTYPE_p_unsigned_int. these file should be in the same directory with "runme.java"
+        here runme.java is similar to the evaluator function in python. : to get sentencePPL and sort the sentence list according to the ppl score.
+        
+3 more information for running this code:
+3.1 make jar package:
+    1)cd to the directory where the pom.xml file is located ("java_code/jnlu-nlg/jnlu-nlg-web")
+    2) $ mvn package
+    3) after the previous step. the jar package can be found in "java_code/jnlu-nlg/jnlu-nlg-web/target" (u should run the jar package which is named as 'with *all dependency'.)
+    4) $java -cp *<ur.jar file>.jar com.jd.jnlu.nlg.test.NLGModelTest
+
+
+
+
+
+
+
+
+
